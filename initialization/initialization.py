@@ -11,12 +11,14 @@ class Initialization:
         self.refKps = None
         self.cam = None
         self.initialized = False
+        self.H = []
+        self.F = []
 
 
 
     def initialize(self):
-        self.computeSIFT()
-        fScore ,retF= self.calcFScore()
+        self.computeSIFTMatches()
+        fScore ,retF = self.calcFScore()
         hScore ,retH = self.calcHScore()
         if(not retF  or not retH):
             self.initialized = False
@@ -30,7 +32,7 @@ class Initialization:
         return
 
 
-    def computeSIFT(self):
+    def computeSIFTMatches(self):
         MIN_MATCH_COUNT = 10
         sift = cv2.SIFT_create()
         kps1,des1 = sift.detectAndCompute(self.refFrame, None)
@@ -52,8 +54,17 @@ class Initialization:
         self.currKps = np.float32([ kps2[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
         
     def calcHScore(self):
-        H, _ = cv.findHomography(self.refKps, self.currKps, cv.RANSAC,5.0)
-        
+        self.H, _ = cv.findHomography(self.refKps, self.currKps, cv.RANSAC,5.0)
+        score = .0
+        for kp1, kp2 in zip(self.refKps,self.currKps):
+            err = np.linalg.norm(kp2[0]-(self.H[0,0]*kp1[0]+self.H[0,1]*kp1[1]+self.H[0,2])/ \
+                    (self.H[2,0]*kp1[0]+self.H[2,1]*kp1[1]+self.H[2,2]),kp2[1]-(self.H[1,0]*kp1[0]+ \
+                        self.H[1,1]*kp1[1]+self.H[2,2])/(self.H[2,0]*kp1[0]+self.H[2,1]*kp1[1]+ \
+                            self.H[2,2]))
+            if err<5.991:
+                score += err
+        return score, True
+
 
 
     def calcFScore(self):
@@ -62,6 +73,12 @@ class Initialization:
             return 0,False
         elif F.shape[0] > 3:
             F = F[0:3, 0:3]
+        self.F = F
+        for kp1, kp2 in zip(self.refKps,self.currKps):
+            err = np.linalg.norm(np.append(kp1,np.array([1]))@F@np.append(kp2,np.array([1])))
+            if err<5.991:
+                score += err
+        return score, True
         
         
 
