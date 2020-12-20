@@ -10,6 +10,7 @@ class SLAM:
     def initilization(self):
         pass
 
+
     def tracking(self):
         pass
 
