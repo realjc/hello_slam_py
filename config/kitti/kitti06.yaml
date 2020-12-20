@@ -1,0 +1,5 @@
+
+
+camera_settings_file: "data/kitti06/KITTI04-12.yaml"
+groundtruth_file: "data/kitti06/groundtruth.txt"
+dataset_file: "data/kitti06/video.mp4"
